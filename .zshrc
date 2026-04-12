@@ -29,6 +29,8 @@ if [[ -d "$HOME/.bun" ]]; then
   [[ -s "$HOME/.bun/_bun" ]] && source "$HOME/.bun/_bun"
 fi
 
+export PATH="/opt/homebrew/bin:$PATH"
+
 # ==============================================================================
 # 3. ZSH OPTIONS & HISTORY
 # ==============================================================================
@@ -43,22 +45,23 @@ autoload -U colors && colors
 # ==============================================================================
 # 4. COMPLETION SYSTEM
 # ==============================================================================
-
 autoload -Uz compinit
 
-# Rebuild completion dump if older than 24h
 if [[ -n ~/.zcompdump(N.mh+24) ]]; then
-  compinit
+  compinit -d ~/.zcompdump -u
 else
-  compinit -C
+  compinit -C -d ~/.zcompdump -u
 fi
+
+[[ ~/.zcompdump -nt ~/.zcompdump.zwc ]] && zcompile ~/.zcompdump
+
 
 # Compile completion cache
 if [[ ! -f ~/.zcompdump.zwc || ~/.zcompdump -nt ~/.zcompdump.zwc ]]; then
   zcompile ~/.zcompdump
 fi
 
-zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}' 'r:|=*' 'l:|=* r:|=*'
+zstyle ':completion:*' matcher-list 'm:{a-z}={A-Z}'
 zstyle ':completion:*' menu select
 zstyle ':completion:*' list-colors "${(s.:.)LS_COLORS}"
 zstyle ':completion:*' special-dirs true
@@ -126,6 +129,7 @@ alias im="vim"
 alias vom="vim"
 alias vimm="vim"
 alias gti="git"
+alias db="cd ~/Basal && vim index.md"
 
 # --- Git Operations ---
 alias gs="git status"
@@ -147,6 +151,7 @@ alias pull="git pull"
 alias commit="git commit -m"
 alias add="git add"
 alias status="git status"
+alias s="git status"
 alias remove="git remote remove origin"
 alias diff="git diff"
 alias branch="git branch"
@@ -233,3 +238,5 @@ rbenv() {
   fi
   rbenv "$@"
 }
+
+export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
