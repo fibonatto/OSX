@@ -169,15 +169,4 @@ endif
 " =============================================================================
 
 autocmd FileType agda setlocal expandtab tabstop=2 shiftwidth=2 softtabstop=2
-"
-" " =============================================================================
-" " digital brain
-" " =============================================================================
-" " Digital Brain Path Logic
-" let $DB = '/Users/bonatto/DB'
-"
-" " Allow 'gf' to find files recursively in the DB folders
-" set path+=$DB/**
-"
-" " Allow 'gf' to open files without typing .md
-" set suffixesadd+=.md
+

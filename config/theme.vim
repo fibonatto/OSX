@@ -41,5 +41,12 @@ colorscheme atomonelight_matte
 
 " Custom highlights
 highlight Comment cterm=italic
-highlight ALEErrorSign guifg=#FF0000 ctermfg=red
-highlight ALEWarningSign guifg=#FFA500 ctermfg=yellow
+
+" LSP Diagnostics - Subtle messages, striking icons
+highlight link LspErrorVirtualText Comment
+highlight link LspWarningVirtualText Comment
+highlight link LspInformationVirtualText Comment
+highlight link LspHintVirtualText Comment
+
+highlight LspErrorText guifg=#D70000 gui=bold
+highlight LspWarningText guifg=#D78700 gui=bold

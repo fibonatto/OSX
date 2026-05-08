@@ -30,18 +30,24 @@ function! StatuslineGit()
   return ''
 endfunction
 
-function! StatuslineALE()
-  if exists('*ale#statusline#Count')
-    let counts = ale#statusline#Count(bufnr(''))
-    let errors = counts.error + counts.style_error
-    let warnings = counts.warning + counts.style_warning
-    if errors > 0
-      return ' E:'.errors.' '
-    elseif warnings > 0
-      return ' W:'.warnings.' '
-    endif
+function! StatuslineLSP() abort
+  if !exists('*lsp#get_buffer_diagnostics_counts')
+    return ''
   endif
-  return ''
+
+  let l:counts = lsp#get_buffer_diagnostics_counts()
+  let l:errors = get(l:counts, 'error', 0)
+  let l:warnings = get(l:counts, 'warning', 0)
+
+  let l:status = ''
+  if l:errors > 0
+    let l:status .= ' E:' . l:errors
+  endif
+  if l:warnings > 0
+    let l:status .= ' W:' . l:warnings
+  endif
+
+  return empty(l:status) ? '' : l:status . ' '
 endfunction
 
 " Build statusline
@@ -50,7 +56,7 @@ set statusline+=%#DiffAdd#%{StatuslineMode()}%*
 set statusline+=%#LineNr#%{StatuslineGit()}%*
 set statusline+=\ %f
 set statusline+=%m%r%h%w
-set statusline+=%#WarningMsg#%{StatuslineALE()}%*
+set statusline+=%#WarningMsg#%{StatuslineLSP()}%*
 set statusline+=%=
 set statusline+=\ %y
 set statusline+=\ [%l,%c]

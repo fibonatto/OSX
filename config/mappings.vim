@@ -160,18 +160,3 @@ smap <expr> <C-j> vsnip#jumpable(1)  ? '<Plug>(vsnip-jump-next)' : '<C-j>'
 imap <expr> <C-k> vsnip#jumpable(-1) ? '<Plug>(vsnip-jump-prev)' : '<C-k>'
 smap <expr> <C-k> vsnip#jumpable(-1) ? '<Plug>(vsnip-jump-prev)' : '<C-k>'
 
-
-" " =============================================================================
-" " Digital Brain
-" " ================================================
-" " Search for the tag under cursor within the DB
-" nnoremap F :call DBSearchEngine(expand('<cWORD>'), 0)<CR>
-"
-" " Quick jump to the brain index
-" nnoremap <leader>db :e $DB/index.md<CR>
-"
-" " Quick jump to TODO list
-" nnoremap <leader>do :e $DB/TODO.md<CR>
-"
-" nnoremap <leader>dd :execute 'e ' . $DB . '/5_Daily/' . strftime('%Y-%m-%d') . '.md'<CR>
-"
