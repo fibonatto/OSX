@@ -1,21 +1,25 @@
 # OSX - Development Configuration
 
-This repository contains custom configurations for development on macOS, including Vim, Zsh, and custom themes.
+This repository contains custom configurations for development environments, including Zsh, tmux, Kitty, and Neovim.
 
 ## Repository Structure
 
 ```
 OSX/
-├── .vimrc                 # Main Vim configuration
 ├── .zshrc                 # Zsh shell configuration
+├── zsh_plugins.txt        # Antidote plugin list
+├── tmux.conf              # tmux configuration
+├── kitty.conf             # Kitty terminal configuration
 ├── install.sh             # Automated setup script
+├── setup.log              # Installer log (created at runtime)
+├── .vimrc                 # Legacy Vim configuration
 ├── config/                # Modular Vim configurations
 │   ├── plugins.vim        # Plugin management
 │   ├── settings.vim       # Basic settings
-│   ├── mappings.vim       # Keyboard shortcuts
-│   ├── theme.vim          # Theme configuration
-│   ├── plugin-config.vim  # Plugin-specific configuration
-│   └── statusline.vim     # Status line configuration
+│   ├── mappings.vim        # Keyboard shortcuts
+│   ├── theme.vim           # Theme configuration
+│   ├── plugin-config.vim   # Plugin-specific configuration
+│   └── statusline.vim      # Status line configuration
 ├── atomonelight.vim       # Custom Atom One Light theme
 ├── bonatto.vim            # Custom Bonatto theme
 ├── statusline.vim         # Custom status line
@@ -24,13 +28,6 @@ OSX/
 ```
 
 ## Key Features
-
-### Vim Configuration
-- **Modular configuration**: Separated into specific files for easy maintenance
-- **Essential plugins**: NERDTree, CtrlP, ALE, Fugitive, and others
-- **Custom themes**: Atom One Light and exclusive Bonatto theme
-- **Optimized shortcuts**: Enhanced navigation and productivity
-- **OCaml support**: Automatic configuration for development
 
 ### Zsh Configuration
 - **Antidote**: Lightning-fast Zsh plugin manager
@@ -47,103 +44,128 @@ OSX/
 - **Custom aliases**: Optimized for Git, Vim, and system navigation using `eza`
 - **Doom Emacs integration**: Configuration for joint usage
 
+### Terminal Configuration
+- **tmux**: Custom terminal multiplexer configuration
+- **Kitty**: Custom terminal emulator configuration
+
+### Neovim Configuration
+The installer clones the Neovim configuration from [fibonatto/nvim-config](https://github.com/fibonatto/nvim-config) into `${XDG_CONFIG_HOME:-$HOME/.config}/nvim`.
+
+### Vim Configuration
+The repository also includes a legacy modular Vim configuration with custom themes, plugins, mappings, and OCaml support.
+
 ## Installation
 
 ### Prerequisites
-- macOS
-- [Homebrew](https://brew.sh)
-- [Antidote](https://getantidote.github.io/) (`brew install antidote`)
-- [eza](https://eza.rocks/) (`brew install eza`)
+
+The installer supports macOS and Linux. On macOS, [Homebrew](https://brew.sh) must be installed. The installer checks dependencies but does not install them automatically.
+
+The following commands must be available before running the installer:
+
+- `git`
+- `curl`
+- `zsh`
+- `nvim`
+- `tmux`
+- `eza`
+- `rg` (ripgrep)
+- `antidote`
+- `kitty`
+
+On macOS, install missing packages with Homebrew, for example:
+
+```bash
+brew install git curl zsh neovim tmux eza ripgrep antidote kitty
+```
+
+Optional Neovim tooling is also checked, but does not prevent installation:
+
+- `clangd`
+- `node`
+- `npm`
+- `typescript-language-server`
 
 ### Automated Installation (Recommended)
 
-This repository provides an automated setup script to configure your development environment quickly and safely. The script will:
-- Check and install required dependencies
-- Backup your existing configurations (unless skipped)
-- Install and configure Vim, Zsh (with Antidote), and all plugins/themes
-- Create all necessary symbolic links
-- Run a health check and provide a summary
+The installer configures the files in this repository and safely handles existing configuration files. It will:
+
+- Verify Homebrew on macOS and check all required dependencies
+- Back up existing Zsh, tmux, Kitty, and Neovim configurations
+- Link `.zshrc`, `zsh_plugins.txt`, `tmux.conf`, and `kitty.conf` into your home directory
+- Clone the Neovim configuration into your XDG configuration directory
+- Check optional Neovim development tools
+- Run a final health check and write details to `setup.log`
 
 #### 1. Clone the repository
+
 ```bash
-git clone https://github.com/SergioBonatto/OSX.git ~/osx-dotfiles
+git clone https://github.com/fibonatto/OSX.git ~/osx-dotfiles
 cd ~/osx-dotfiles
 ```
 
 #### 2. Run the installer
+
 ```bash
 chmod +x install.sh
 ./install.sh
 ```
 
-#### 3. Options
-The installer supports several options:
+The installer creates timestamped backups next to existing configuration paths, using the format `.backup` with a timestamp. For example, an existing `~/.zshrc` may become `~/.zshrc.20260923120000.backup`.
 
-| Option           | Description                                    |
-|------------------|------------------------------------------------|
-| -h, --help       | Show help message                              |
-| -v, --verbose    | Enable verbose logging                         |
-| --skip-backup    | Skip backup of existing configurations         |
-| --check-only     | Only run health check, do not install anything |
-| --force          | Force reinstallation of existing components    |
+#### 3. Options
+
+| Option | Description |
+|--------|-------------|
+| `-h`, `--help` | Show the help message |
+| `--skip-backup` | Do not back up existing configurations before installation |
+| `--check-only` | Run the health check without installing configurations |
+| `--force` | Continue and return successfully after installation or health-check failures |
 
 **Examples:**
+
 ```bash
 # Full installation (recommended)
 ./install.sh
 
-# Only run health check
+# Only run the health check
 ./install.sh --check-only
 
-# Skip backup (not recommended)
+# Skip backups (not recommended)
 ./install.sh --skip-backup
+
+# Continue after an installation failure
+./install.sh --force
 ```
 
 #### 4. Apply changes
+
 After installation, restart your terminal or run:
+
 ```bash
 exec $SHELL
 ```
 
----
+The installer writes its log to `setup.log` in the repository directory.
 
-### Manual Installation (Advanced)
+### Shell Configuration
 
-If you prefer to set up manually, follow these steps:
+If Zsh is not your current login shell, the installer displays the command needed to change it:
 
-1. **Backup existing configurations:**
-    ```bash
-    mv ~/.vimrc ~/.vimrc.backup 2>/dev/null || true
-    mv ~/.zshrc ~/.zshrc.backup 2>/dev/null || true
-    mv ~/.zsh_plugins.txt ~/.zsh_plugins.txt.backup 2>/dev/null || true
-    ```
-2. **Create symbolic links:**
-    ```bash
-    # Vim
-    ln -sf ~/osx-dotfiles/.vimrc ~/.vimrc
-    mkdir -p ~/.vim/config
-    ln -sf ~/osx-dotfiles/config/* ~/.vim/config/
+```bash
+chsh -s "$(command -v zsh)"
+```
 
-    # Zsh
-    ln -sf ~/osx-dotfiles/.zshrc ~/.zshrc
-    ln -sf ~/osx-dotfiles/zsh_plugins.txt ~/.zsh_plugins.txt
-    ```
-3. **Install Pawsh Theme:**
-    ```bash
-    git clone https://github.com/SergioBonatto/pawsh-zsh-theme.git /tmp/pawsh-theme
-    mkdir -p ~/.zsh/themes
-    cp /tmp/pawsh-theme/pawsh.zsh-theme ~/.zsh/themes/
-    rm -rf /tmp/pawsh-theme
-    ```
-4. **Install Vim plugins:**
-    ```bash
-    vim +PlugInstall +qall
-    ```
-5. **Reload configurations:**
-    ```bash
-    source ~/.zshrc
-    ```
+Restart your terminal after changing the login shell.
 
+## Health Check
+
+Run the health check with:
+
+```bash
+./install.sh --check-only
+```
+
+A successful health check confirms that the managed configuration links exist, the Neovim configuration contains `init.lua`, and all required dependencies are available. The command still performs the prerequisite checks before running the health check.
 
 ## Custom Themes
 
@@ -169,21 +191,25 @@ If you prefer to set up manually, follow these steps:
 ### Zsh Aliases
 - **Git shortcuts**: `push`, `pull`, `commit`, `add`, `status`
 - **Navigation**: `q` (exit), `c` (clear), `cdd` (cd ..)
-- **Vim**: `v`, `im`, `vom` (all open vim)
+- **Vim**: `v`, `im`, `vom` (all open Vim)
 
 ## Customization
 
 ### Adding New Vim Plugins
 Edit `config/plugins.vim`:
+
 ```vim
 Plug 'author/plugin-name'
 ```
+
 Run `:PlugInstall` in Vim.
 
 ### Modifying Shortcuts
+
 Edit `config/mappings.vim` to add or modify shortcuts.
 
 ### Customizing Themes
+
 - Modify `atomonelight.vim` or `bonatto.vim`
 - Or create your own theme based on the existing structure
 
