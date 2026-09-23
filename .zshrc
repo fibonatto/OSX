@@ -13,10 +13,12 @@ export SAVEHIST=10000
 typeset -U path PATH
 
 path=(
+  $HOME/.npm-global/bin
   $HOME/.config/emacs/bin
   $HOME/.local/bin
   /opt/homebrew/opt/llvm/bin
   /opt/homebrew/opt/node@24/bin
+  $HOME/.cargo/bin
   $path
 )
 
@@ -30,7 +32,7 @@ if [[ -d "$HOME/.bun" ]]; then
 fi
 
 export PATH="/opt/homebrew/bin:$PATH"
-
+export PATH="$HOME/.vim/bin:$PATH"
 # ==============================================================================
 # 3. ZSH OPTIONS & HISTORY
 # ==============================================================================
@@ -102,10 +104,10 @@ alias q="exit"
 alias c="clear"
 alias cl="clear"
 
-alias ll="eza -la --icons"
-alias la="eza -A --icons"
-alias l="eza --icons"
-alias ls="eza --icons"
+alias ll="eza -la --icons=auto"
+alias la="eza -A --icons=auto"
+alias l="eza --icons=auto"
+alias ls="eza --icons=auto"
 
 alias ..="cd .."
 alias grep="grep --color=auto"
@@ -114,7 +116,23 @@ alias h="history"
 alias j="jobs"
 alias du="du -h"
 alias df="df -h"
-alias v="vim"
+
+# --- Nvim ---
+alias v="nvim"
+alias im="nvim"
+alias vim="nvim"
+alias vom="nvim"
+alias vimm="nvim"
+
+# --- Tmux ---
+alias t="tmux"
+alias ta="tmux attach -t"
+alias tl="tmux ls"
+alias tk="tmux kill-session -t"
+
+tn() {
+    tmux new-session -A -s "$1"
+}
 
 # --- Typo Corrections ---
 alias dc="cd"
@@ -125,11 +143,11 @@ alias celar="clear"
 alias clea="clear"
 alias cler="clear"
 alias clera="clear"
-alias im="vim"
-alias vom="vim"
-alias vimm="vim"
 alias gti="git"
 alias db="cd ~/Basal && vim index.md"
+alias kim="ollama launch codex --model kimi-k2.6:cloud"
+alias coder="ollama run qwen2.5-coder:7b"
+alias gemma="ollama run gemma3:1b"
 
 # --- Git Operations ---
 alias gs="git status"
@@ -162,6 +180,7 @@ alias ns="npm start"
 alias ni="npm install"
 alias nt="npm test"
 alias nr="npm run"
+alias pyserver="python3 -m http.server"
 
 # ==============================================================================
 # 8. FUNCTIONS
@@ -240,3 +259,24 @@ rbenv() {
 }
 
 export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+export PATH="/opt/homebrew/opt/llvm/bin:$PATH"
+
+[ -f "/Users/bonatto/.ghcup/env" ] && . "/Users/bonatto/.ghcup/env" # ghcup-envexport PATH="$HOME/.local/bin:$PATH"
+
+# pnpm
+export PNPM_HOME="/Users/bonatto/Library/pnpm"
+case ":$PATH:" in
+  *":$PNPM_HOME/bin:"*) ;;
+  *) export PATH="$PNPM_HOME/bin:$PATH" ;;
+esac
+# pnpm end
+
+# >>> grok installer >>>
+export PATH="$HOME/.grok/bin:$PATH"
+fpath=(~/.grok/completions/zsh $fpath)
+autoload -Uz compinit && compinit -C
+# <<< grok installer <<<
+
+# opencode
+export PATH=/Users/bonatto/.opencode/bin:$PATH
+export PATH="/Users/bonatto/.bend/bin:$PATH"
