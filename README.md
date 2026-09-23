@@ -1,6 +1,8 @@
 # OSX - Development Configuration
 
-This repository contains custom configurations for development environments, including Zsh, tmux, Kitty, and Neovim.
+This repository contains the current configuration files used to set up a development environment with Zsh, tmux, Kitty, and Neovim.
+
+> **Note:** The `.deprecated` directory contains legacy files kept only for project history. Its contents are outdated, must not be used, and are intentionally not documented here.
 
 ## Repository Structure
 
@@ -10,49 +12,27 @@ OSX/
 ├── zsh_plugins.txt        # Antidote plugin list
 ├── tmux.conf              # tmux configuration
 ├── kitty.conf             # Kitty terminal configuration
-├── install.sh             # Automated setup script
-├── setup.log              # Installer log (created at runtime)
-├── .vimrc                 # Legacy Vim configuration
-├── config/                # Modular Vim configurations
-│   ├── plugins.vim        # Plugin management
-│   ├── settings.vim       # Basic settings
-│   ├── mappings.vim        # Keyboard shortcuts
-│   ├── theme.vim           # Theme configuration
-│   ├── plugin-config.vim   # Plugin-specific configuration
-│   └── statusline.vim      # Status line configuration
-├── atomonelight.vim       # Custom Atom One Light theme
-├── bonatto.vim            # Custom Bonatto theme
-├── statusline.vim         # Custom status line
-├── wallpaper-black.png    # Wallpaper
-└── reuvolucionario.jpeg   # Additional image
+└── install.sh             # Automated setup script
 ```
+
+The current configuration is modularized across this repository and other repositories used by the setup. Neovim is maintained separately in [fibonatto/nvim-config](https://github.com/fibonatto/nvim-config) and is cloned by the installer.
 
 ## Key Features
 
 ### Zsh Configuration
-- **Antidote**: Lightning-fast Zsh plugin manager
+- **Antidote**: Lightweight Zsh plugin manager
 - **eza**: A modern, feature-rich replacement for `ls`
-- **Theme**: pawsh (lightweight, minimal prompt with no framework dependency)
-- **Theme Features**:
-  - Contextual cat prompt (`ᓚᘏᗢ`) based on exit status
-  - Fast Git status display (staged, modified, untracked, deleted, ahead/behind)
-  - Vi mode awareness and virtualenv visibility
-  - Prompt refresh on keymap change
-- **Included plugins**:
-  - zsh-syntax-highlighting, zsh-autosuggestions
-  - gitignore (via Oh My Zsh plugins)
-- **Custom aliases**: Optimized for Git, Vim, and system navigation using `eza`
-- **Doom Emacs integration**: Configuration for joint usage
+- **Custom prompt**: pawsh-inspired prompt with Git status and contextual state
+- **Included plugins**: zsh-syntax-highlighting, zsh-autosuggestions, and Git-related plugins
+- **Custom aliases**: Shortcuts for Git, Vim, navigation, and system commands
+- **Doom Emacs integration**: Support for using the shell configuration alongside Doom Emacs
 
 ### Terminal Configuration
 - **tmux**: Custom terminal multiplexer configuration
 - **Kitty**: Custom terminal emulator configuration
 
 ### Neovim Configuration
-The installer clones the Neovim configuration from [fibonatto/nvim-config](https://github.com/fibonatto/nvim-config) into `${XDG_CONFIG_HOME:-$HOME/.config}/nvim`.
-
-### Vim Configuration
-The repository also includes a legacy modular Vim configuration with custom themes, plugins, mappings, and OCaml support.
+Neovim is managed in the separate [fibonatto/nvim-config](https://github.com/fibonatto/nvim-config) repository. The installer clones it into `${XDG_CONFIG_HOME:-$HOME/.config}/nvim`.
 
 ## Installation
 
@@ -78,7 +58,7 @@ On macOS, install missing packages with Homebrew, for example:
 brew install git curl zsh neovim tmux eza ripgrep antidote kitty
 ```
 
-Optional Neovim tooling is also checked, but does not prevent installation:
+The installer also checks the following optional Neovim tools. They do not prevent installation:
 
 - `clangd`
 - `node`
@@ -92,7 +72,7 @@ The installer configures the files in this repository and safely handles existin
 - Verify Homebrew on macOS and check all required dependencies
 - Back up existing Zsh, tmux, Kitty, and Neovim configurations
 - Link `.zshrc`, `zsh_plugins.txt`, `tmux.conf`, and `kitty.conf` into your home directory
-- Clone the Neovim configuration into your XDG configuration directory
+- Clone the external Neovim configuration into your XDG configuration directory
 - Check optional Neovim development tools
 - Run a final health check and write details to `setup.log`
 
@@ -110,7 +90,7 @@ chmod +x install.sh
 ./install.sh
 ```
 
-The installer creates timestamped backups next to existing configuration paths, using the format `.backup` with a timestamp. For example, an existing `~/.zshrc` may become `~/.zshrc.20260923120000.backup`.
+The installer creates timestamped backups next to existing configuration paths. For example, an existing `~/.zshrc` may become `~/.zshrc.20260923120000.backup`.
 
 #### 3. Options
 
@@ -119,7 +99,7 @@ The installer creates timestamped backups next to existing configuration paths, 
 | `-h`, `--help` | Show the help message |
 | `--skip-backup` | Do not back up existing configurations before installation |
 | `--check-only` | Run the health check without installing configurations |
-| `--force` | Continue and return successfully after installation or health-check failures |
+| `--force` | Continue after installation or health-check failures |
 
 **Examples:**
 
@@ -165,61 +145,28 @@ Run the health check with:
 ./install.sh --check-only
 ```
 
-A successful health check confirms that the managed configuration links exist, the Neovim configuration contains `init.lua`, and all required dependencies are available. The command still performs the prerequisite checks before running the health check.
-
-## Custom Themes
-
-### Atom One Light
-- Theme based on the official Atom theme
-- Optimized for clarity and readability
-- Harmonious colors for long coding sessions
-
-### Bonatto Theme
-- Exclusive custom theme
-- Unique and modern color palette
-- Distinctive styles for code elements
-
-## Main Shortcuts
-
-### Vim
-- **Leader key**: `,` (comma)
-- **Quick navigation**: `Shift+j/k` for 6-line movement
-- **Word navigation**: `Shift+h/l` for beginning/end of word
-- **Windows**: `Ctrl+h/j/k/l` for panel navigation
-- **Resize**: Arrow keys to adjust windows
-
-### Zsh Aliases
-- **Git shortcuts**: `push`, `pull`, `commit`, `add`, `status`
-- **Navigation**: `q` (exit), `c` (clear), `cdd` (cd ..)
-- **Vim**: `v`, `im`, `vom` (all open Vim)
+A successful health check confirms that the managed configuration links exist, the external Neovim configuration contains `init.lua`, and all required dependencies are available.
 
 ## Customization
 
-### Adding New Vim Plugins
-Edit `config/plugins.vim`:
+Edit the current configuration files directly to customize the environment:
 
-```vim
-Plug 'author/plugin-name'
-```
+- `.zshrc` for shell behavior, aliases, and prompt settings
+- `zsh_plugins.txt` for Antidote plugins
+- `tmux.conf` for tmux behavior and key bindings
+- `kitty.conf` for terminal appearance and behavior
+- The external [nvim-config](https://github.com/fibonatto/nvim-config) repository for Neovim settings and plugins
 
-Run `:PlugInstall` in Vim.
-
-### Modifying Shortcuts
-
-Edit `config/mappings.vim` to add or modify shortcuts.
-
-### Customizing Themes
-
-- Modify `atomonelight.vim` or `bonatto.vim`
-- Or create your own theme based on the existing structure
+Do not use files from `.deprecated`; they are retained for historical reference only.
 
 ## Contributing
 
 Feel free to:
+
 - Report bugs
 - Suggest improvements
 - Submit pull requests
-- Share your customizations
+- Share configuration improvements
 
 ## License
 
@@ -232,4 +179,4 @@ This project is under the MIT license. See the LICENSE file for more details.
 
 ---
 
-These configurations have been tested on macOS and represent a personal development environment. Adapt as needed for your workflow.
+These configurations represent a personal development environment. Adapt them as needed for your workflow.
