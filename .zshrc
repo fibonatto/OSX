@@ -81,7 +81,7 @@ zsh_plugins="$HOME/.zsh_plugins.txt"
 zsh_plugins_compiled="$HOME/.zsh_plugins.zsh"
 
 if [[ ! -f "$zsh_plugins_compiled" || "$zsh_plugins" -nt "$zsh_plugins_compiled" ]]; then
-  source /opt/homebrew/opt/antidote/share/antidote/antidote.zsh
+	source "$(brew --prefix antidote)/share/antidote/antidote.zsh"
   antidote bundle < "$zsh_plugins" > "$zsh_plugins_compiled"
 fi
 

@@ -152,6 +152,30 @@ check_homebrew() {
 }
 
 # ==============================================================================
+# Antidote
+# ==============================================================================
+
+
+check_antidote() {
+    local antidote_script
+
+    if command_exists brew; then
+        antidote_script="$(brew --prefix antidote)/share/antidote/antidote.zsh"
+    else
+        print_error "Homebrew is not installed"
+        return 1
+    fi
+
+    if [[ -f "$antidote_script" ]]; then
+        print_success "antidote"
+        return 0
+    fi
+
+    print_error "antidote is not installed"
+    return 1
+}
+
+# ==============================================================================
 # Dependencies
 # ==============================================================================
 
@@ -168,7 +192,6 @@ check_dependencies() {
         tmux
         eza
         rg
-        antidote
         kitty
     )
 
@@ -180,6 +203,10 @@ check_dependencies() {
             print_error "$dependency is not installed"
         fi
     done
+
+		if ! check_antidote; then
+        missing+=("antidote")
+    fi
 
     if [[ ${#missing[@]} -gt 0 ]]; then
         echo
@@ -424,7 +451,6 @@ health_check() {
         tmux
         eza
         rg
-        antidote
         kitty
     )
 
