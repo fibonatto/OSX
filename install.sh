@@ -1,63 +1,72 @@
 #!/usr/bin/env bash
+
 set -euo pipefail
 
-# Detect operating system for compatibility
+# ==============================================================================
+# Dotfiles Installer
+# ==============================================================================
+
+readonly SCRIPT_NAME="$(basename "$0")"
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+readonly LOG_FILE="${SCRIPT_DIR}/setup.log"
+
+readonly NVIM_CONFIG_REPO="https://github.com/fibonatto/nvim-config.git"
+
+# ==============================================================================
+# Colors
+# ==============================================================================
+
+readonly RED='\033[0;31m'
+readonly GREEN='\033[0;32m'
+readonly YELLOW='\033[1;33m'
+readonly BLUE='\033[0;34m'
+readonly BOLD='\033[1m'
+readonly NC='\033[0m'
+
+# ==============================================================================
+# OS Detection
+# ==============================================================================
+
 if [[ "$OSTYPE" == "darwin"* ]]; then
     readonly OS_TYPE="macos"
 elif [[ "$OSTYPE" == "linux-gnu"* ]]; then
     readonly OS_TYPE="linux"
 else
     readonly OS_TYPE="unknown"
-    print_warning "Unknown OS type: $OSTYPE. Some features may not work correctly."
 fi
 
-# =============================================================================
-# Development Environment Setup Script
-# =============================================================================
+# ==============================================================================
+# Paths
+# ==============================================================================
 
-readonly SCRIPT_NAME="$(basename "$0")"
-readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-readonly LOG_FILE="${SCRIPT_DIR}/setup.log"
+readonly ZSHRC="$HOME/.zshrc"
+readonly ZSH_PLUGINS="$HOME/.zsh_plugins.txt"
 
-# Colors for output
-readonly RED='\033[0;31m'
-readonly GREEN='\033[0;32m'
-readonly YELLOW='\033[1;33m'
-readonly BLUE='\033[0;34m'
-readonly BOLD='\033[1m'
-readonly NC='\033[0m' # No Color
+readonly TMUX_CONFIG="$HOME/.tmux.conf"
 
-# Required dependencies (adjusted for macOS)
-readonly REQUIRED_DEPS=(git curl vim antidote eza)
-readonly OPTIONAL_DEPS=(zsh)
+readonly KITTY_CONFIG="$HOME/.config/kitty/kitty.conf"
 
-# macOS-specific adjustments
-if [[ "$OS_TYPE" == "macos" ]]; then
-    # macOS uses BSD date, which has different format options
-    readonly BACKUP_SUFFIX=".$(date +%Y%m%d%H%M%S).backup"
-    # Prefer GNU coreutils if available (via brew)
-    if command -v gdate >/dev/null 2>&1; then
-        readonly DATE_CMD="gdate"
-    else
-        readonly DATE_CMD="date"
-    fi
-else
-    readonly BACKUP_SUFFIX=".$(date +%Y%m%d%H%M%S).backup"
-    readonly DATE_CMD="date"
-fi
+readonly NVIM_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
 
-# =============================================================================
-# Utility Functions
-# =============================================================================
+readonly BACKUP_SUFFIX=".$(date +%Y%m%d%H%M%S).backup"
+
+# ==============================================================================
+# Logging
+# ==============================================================================
 
 log() {
-    echo "$($DATE_CMD '+%Y-%m-%d %H:%M:%S') - $*" | tee -a "$LOG_FILE"
+    echo "$(date '+%Y-%m-%d %H:%M:%S') - $*" | tee -a "$LOG_FILE"
 }
 
+# ==============================================================================
+# Output
+# ==============================================================================
+
 print_header() {
-    echo -e "${BLUE}${BOLD}===============================${NC}"
+    echo
+    echo -e "${BLUE}${BOLD}================================${NC}"
     echo -e "${BLUE}${BOLD}$1${NC}"
-    echo -e "${BLUE}${BOLD}===============================${NC}"
+    echo -e "${BLUE}${BOLD}================================${NC}"
 }
 
 print_success() {
@@ -80,16 +89,23 @@ print_info() {
     log "INFO: $1"
 }
 
-check_command() {
+# ==============================================================================
+# Utilities
+# ==============================================================================
+
+command_exists() {
     command -v "$1" >/dev/null 2>&1
 }
 
-backup_file() {
-    local file="$1"
-    if [[ -f "$file" ]]; then
-        local backup="${file}${BACKUP_SUFFIX}"
-        mv "$file" "$backup"
-        print_success "Backed up $file to $backup"
+backup_path() {
+    local path="$1"
+
+    if [[ -e "$path" || -L "$path" ]]; then
+        local backup="${path}${BACKUP_SUFFIX}"
+
+        mv "$path" "$backup"
+
+        print_success "Backed up $path -> $backup"
     fi
 }
 
@@ -98,445 +114,504 @@ create_symlink() {
     local target="$2"
 
     if [[ ! -e "$source" ]]; then
-        print_warning "Source file $source does not exist, skipping symlink"
+        print_warning "Source does not exist: $source"
         return 1
     fi
 
-    # Remove existing symlink or file
-    [[ -L "$target" || -f "$target" ]] && rm -f "$target"
-
-    # Create parent directory if needed
     mkdir -p "$(dirname "$target")"
 
-    if ln -sf "$source" "$target"; then
-        print_success "Created symlink: $target -> $source"
+    if [[ -L "$target" ]]; then
+        rm "$target"
+    elif [[ -e "$target" ]]; then
+        backup_path "$target"
+    fi
+
+    ln -s "$source" "$target"
+
+    print_success "Linked $target -> $source"
+}
+
+# ==============================================================================
+# Homebrew
+# ==============================================================================
+
+check_homebrew() {
+    if [[ "$OS_TYPE" != "macos" ]]; then
         return 0
+    fi
+
+    print_header "Checking Homebrew"
+
+    if command_exists brew; then
+        print_success "Homebrew is installed"
     else
-        print_error "Failed to create symlink: $target -> $source"
+        print_error "Homebrew is not installed"
+        print_info "Install it from https://brew.sh"
         return 1
     fi
 }
 
-download_file() {
-    local url="$1"
-    local output="$2"
-    local description="$3"
-
-    print_info "Downloading $description..."
-    if curl -fsSL --connect-timeout 10 --retry 3 "$url" -o "$output"; then
-        print_success "Downloaded $description"
-        return 0
-    else
-        print_error "Failed to download $description from $url"
-        return 1
-    fi
-}
-
-# =============================================================================
-# Validation Functions
-# =============================================================================
+# ==============================================================================
+# Dependencies
+# ==============================================================================
 
 check_dependencies() {
     print_header "Checking Dependencies"
 
-    local missing_deps=()
+    local missing=()
 
-    for dep in "${REQUIRED_DEPS[@]}"; do
-        if check_command "$dep"; then
-            print_success "$dep is available"
+    local dependencies=(
+        git
+        curl
+        zsh
+        nvim
+        tmux
+        eza
+        rg
+        antidote
+        kitty
+    )
+
+    for dependency in "${dependencies[@]}"; do
+        if command_exists "$dependency"; then
+            print_success "$dependency"
         else
-            missing_deps+=("$dep")
-            print_error "$dep is required but not installed"
+            missing+=("$dependency")
+            print_error "$dependency is not installed"
         fi
     done
 
-    if [[ ${#missing_deps[@]} -gt 0 ]]; then
-        print_error "Missing required dependencies: ${missing_deps[*]}"
-        print_info "Please install the missing dependencies and run the script again."
-        exit 1
+    if [[ ${#missing[@]} -gt 0 ]]; then
+        echo
+
+        print_error "Missing dependencies: ${missing[*]}"
+
+        if [[ "$OS_TYPE" == "macos" ]]; then
+            print_info "Install missing packages with Homebrew:"
+            echo
+            echo "  brew install ${missing[*]}"
+        fi
+
+        return 1
+    fi
+}
+
+# ==============================================================================
+# Zsh
+# ==============================================================================
+
+configure_zsh() {
+    print_header "Configuring Zsh"
+
+    if [[ -f "$SCRIPT_DIR/.zshrc" ]]; then
+        create_symlink "$SCRIPT_DIR/.zshrc" "$ZSHRC"
+    else
+        print_warning "No .zshrc found in $SCRIPT_DIR"
     fi
 
-    # Check optional dependencies
-    for dep in "${OPTIONAL_DEPS[@]}"; do
-        if check_command "$dep"; then
-            print_success "$dep is available (optional)"
+    if [[ -f "$SCRIPT_DIR/zsh_plugins.txt" ]]; then
+        create_symlink "$SCRIPT_DIR/zsh_plugins.txt" "$ZSH_PLUGINS"
+    else
+        print_warning "No zsh_plugins.txt found in $SCRIPT_DIR"
+    fi
+
+    if [[ "$SHELL" != *"zsh"* ]]; then
+        print_warning "Current login shell is $SHELL"
+        print_info "Change it with: chsh -s \"$(command -v zsh)\""
+    else
+        print_success "Zsh is the current shell"
+    fi
+}
+
+# ==============================================================================
+# Terminal Tools
+# ==============================================================================
+
+configure_terminal_tools() {
+    print_header "Configuring Terminal Tools"
+
+    # tmux
+    if [[ -f "$SCRIPT_DIR/tmux.conf" ]]; then
+        create_symlink "$SCRIPT_DIR/tmux.conf" "$TMUX_CONFIG"
+    else
+        print_warning "No tmux.conf found"
+    fi
+
+    # Kitty
+    if [[ -f "$SCRIPT_DIR/kitty.conf" ]]; then
+        create_symlink "$SCRIPT_DIR/kitty.conf" "$KITTY_CONFIG"
+    else
+        print_warning "No kitty.conf found"
+    fi
+}
+
+# ==============================================================================
+# Neovim
+# ==============================================================================
+
+install_nvim_config() {
+    print_header "Configuring Neovim"
+
+    local nvim_parent
+    nvim_parent="$(dirname "$NVIM_CONFIG")"
+
+    mkdir -p "$nvim_parent"
+
+    if [[ -L "$NVIM_CONFIG" ]]; then
+        print_info "Existing Neovim configuration is a symlink"
+
+        if [[ "$(readlink "$NVIM_CONFIG")" == "$NVIM_CONFIG_REPO" ]]; then
+            print_success "Neovim configuration already configured"
+            return 0
+        fi
+
+        backup_path "$NVIM_CONFIG"
+    fi
+
+    if [[ -d "$NVIM_CONFIG" ]]; then
+        if [[ -d "$NVIM_CONFIG/.git" ]]; then
+            local remote
+            remote="$(git -C "$NVIM_CONFIG" remote get-url origin 2>/dev/null || true)"
+
+            if [[ "$remote" == "$NVIM_CONFIG_REPO" ]]; then
+                print_success "Neovim configuration already cloned"
+                return 0
+            fi
+        fi
+
+        backup_path "$NVIM_CONFIG"
+    fi
+
+    print_info "Cloning Neovim configuration..."
+
+    git clone "$NVIM_CONFIG_REPO" "$NVIM_CONFIG"
+
+    print_success "Neovim configuration installed"
+    print_info "Lazy.nvim will install plugins on the first nvim launch"
+}
+
+# ==============================================================================
+# Neovim Environment
+# ==============================================================================
+
+check_nvim_environment() {
+    print_header "Checking Neovim Environment"
+
+    local optional=(
+        clangd
+        node
+        npm
+        typescript-language-server
+    )
+
+    for dependency in "${optional[@]}"; do
+        if command_exists "$dependency"; then
+            print_success "$dependency"
         else
-            print_warning "$dep is not installed (optional)"
+            print_warning "$dependency is not installed"
         fi
     done
 }
 
-validate_shell() {
-    if ! check_command zsh; then
-        print_warning "Zsh is not installed. Some features will be skipped."
-        return 1
-    fi
-
-    # On macOS, default shell changed to zsh in Catalina+
-    if [[ "$OS_TYPE" == "macos" ]]; then
-        if [[ "$SHELL" != *"zsh" ]]; then
-            print_info "macOS defaults to zsh. Current shell: $SHELL"
-            print_info "To change default shell: chsh -s \$(which zsh)"
-        fi
-    else
-        if [[ "$SHELL" != *"zsh" ]]; then
-            print_warning "Current shell is not zsh. Consider changing default shell with: chsh -s \$(which zsh)"
-        fi
-    fi
-
-    return 0
-}
-
-# =============================================================================
-# Installation Functions
-# =============================================================================
-
-install_vim_plug() {
-    print_header "Installing vim-plug"
-
-    local plug_file="$HOME/.vim/autoload/plug.vim"
-
-    if [[ -f "$plug_file" ]]; then
-        print_info "vim-plug already installed, checking for updates..."
-        # Try to update vim-plug with timeout and log to avoid hanging
-        if timeout 30 vim -es -u NONE -c 'source ~/.vim/autoload/plug.vim | PlugUpgrade | qa' >> "$LOG_FILE" 2>&1; then
-            print_success "vim-plug updated successfully"
-        else
-            print_warning "vim-plug update failed or timed out"
-        fi
-    else
-        print_info "Installing vim-plug..."
-        mkdir -p "$(dirname "$plug_file")"
-        if download_file \
-            "https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim" \
-            "$plug_file" \
-            "vim-plug"; then
-            print_success "vim-plug installed successfully"
-        else
-            return 1
-        fi
-    fi
-}
-
-install_antidote_check() {
-    print_header "Checking Antidote"
-
-    if ! validate_shell; then
-        print_warning "Skipping Antidote check (zsh not available)"
-        return 0
-    fi
-
-    if check_command antidote; then
-        print_success "Antidote is installed"
-        return 0
-    else
-        print_error "Antidote is not installed. Please install it using: brew install antidote"
-        return 1
-    fi
-}
+# ==============================================================================
+# Backup
+# ==============================================================================
 
 backup_configurations() {
     print_header "Backing Up Existing Configurations"
 
     local configs=(
-        "$HOME/.vimrc"
-        "$HOME/.zshrc"
-        "$HOME/.zsh_plugins.txt"
+        "$ZSHRC"
+        "$ZSH_PLUGINS"
+        "$TMUX_CONFIG"
+        "$KITTY_CONFIG"
+        "$NVIM_CONFIG"
     )
 
     for config in "${configs[@]}"; do
-        backup_file "$config"
+        if [[ -e "$config" || -L "$config" ]]; then
+            backup_path "$config"
+        fi
     done
 }
 
-configure_vim() {
-    print_header "Configuring Vim"
+# ==============================================================================
+# Health Check
+# ==============================================================================
 
-    # Create vim directories
-    mkdir -p "$HOME/.vim/config" "$HOME/.vim/backup" "$HOME/.vim/swap" "$HOME/.vim/undo"
-
-    # Link main vimrc
-    if [[ -f "$SCRIPT_DIR/.vimrc" ]]; then
-        create_symlink "$SCRIPT_DIR/.vimrc" "$HOME/.vimrc"
-    else
-        print_warning "No .vimrc found in script directory"
-    fi
-
-    # Link vim config files
-    if [[ -d "$SCRIPT_DIR/config" ]] && compgen -G "$SCRIPT_DIR/config/*" > /dev/null; then
-        print_info "Linking vim configuration files..."
-        for config_file in "$SCRIPT_DIR/config/"*; do
-            local filename="$(basename "$config_file")"
-            create_symlink "$config_file" "$HOME/.vim/config/$filename"
-        done
-    else
-        print_info "No additional vim config files found"
-    fi
-}
-
-configure_zsh() {
-    print_header "Configuring Zsh"
-
-    if ! validate_shell; then
-        print_warning "Skipping Zsh configuration"
-        return 0
-    fi
-
-    if [[ -f "$SCRIPT_DIR/.zshrc" ]]; then
-        create_symlink "$SCRIPT_DIR/.zshrc" "$HOME/.zshrc"
-    else
-        print_warning "No .zshrc found in script directory"
-    fi
-
-    if [[ -f "$SCRIPT_DIR/zsh_plugins.txt" ]]; then
-        create_symlink "$SCRIPT_DIR/zsh_plugins.txt" "$HOME/.zsh_plugins.txt"
-    else
-        print_warning "No zsh_plugins.txt found in script directory"
-    fi
-}
-
-install_vim_plugins() {
-    print_header "Installing Vim Plugins"
-
-    if [[ ! -f "$HOME/.vimrc" ]]; then
-        print_warning "No .vimrc found, skipping plugin installation"
-        return 0
-    fi
-
-    print_info "Installing/updating Vim plugins..."
-    if timeout 300 vim +PlugInstall +PlugUpdate +qa 2>/dev/null; then
-        print_success "Vim plugins installed/updated successfully"
-    else
-        print_error "Vim plugin installation failed or timed out"
-        return 1
-    fi
-}
-
-install_pawsh_theme() {
-    print_header "Installing Pawsh Theme"
-
-    local theme_dir="$HOME/.zsh/themes"
-    local temp_dir="/tmp/pawsh-zsh-theme-$$"
-
-    print_info "Installing/updating pawsh theme..."
-
-    # Clean up any existing temp directory
-    rm -rf "$temp_dir"
-
-    if git clone --depth 1 https://github.com/SergioBonatto/pawsh-zsh-theme.git "$temp_dir"; then
-        mkdir -p "$theme_dir"
-        cp "$temp_dir/pawsh.zsh-theme" "$theme_dir/"
-        rm -rf "$temp_dir"
-        print_success "Pawsh theme installed/updated successfully at $theme_dir"
-    else
-        print_error "Failed to clone pawsh theme repository"
-        rm -rf "$temp_dir"
-        return 1
-    fi
-}
-
-# =============================================================================
-# Health Check Functions
-# =============================================================================
-
-run_health_check() {
-    print_header "Running Health Check"
+health_check() {
+    print_header "Health Check"
 
     local issues=0
 
-    # Check if symlinks are valid
-    local configs=(
-        "$HOME/.vimrc"
-        "$HOME/.zshrc"
-        "$HOME/.zsh_plugins.txt"
+    # --------------------------------------------------------------------------
+    # Zsh
+    # --------------------------------------------------------------------------
+
+    if [[ -L "$ZSHRC" && -e "$ZSHRC" ]]; then
+        print_success ".zshrc"
+    elif [[ -f "$ZSHRC" ]]; then
+        print_warning ".zshrc exists but is not managed by this repository"
+    else
+        print_error ".zshrc is missing"
+        ((issues++))
+    fi
+
+    # --------------------------------------------------------------------------
+    # Zsh Plugins
+    # --------------------------------------------------------------------------
+
+    if [[ -L "$ZSH_PLUGINS" && -e "$ZSH_PLUGINS" ]]; then
+        print_success ".zsh_plugins.txt"
+    elif [[ -f "$ZSH_PLUGINS" ]]; then
+        print_warning ".zsh_plugins.txt exists but is not managed by this repository"
+    else
+        print_error ".zsh_plugins.txt is missing"
+        ((issues++))
+    fi
+
+    # --------------------------------------------------------------------------
+    # tmux
+    # --------------------------------------------------------------------------
+
+    if [[ -L "$TMUX_CONFIG" && -e "$TMUX_CONFIG" ]]; then
+        print_success "tmux configuration"
+    elif [[ -f "$TMUX_CONFIG" ]]; then
+        print_warning ".tmux.conf exists but is not managed by this repository"
+    else
+        print_error ".tmux.conf is missing"
+        ((issues++))
+    fi
+
+    # --------------------------------------------------------------------------
+    # Kitty
+    # --------------------------------------------------------------------------
+
+    if [[ -L "$KITTY_CONFIG" && -e "$KITTY_CONFIG" ]]; then
+        print_success "Kitty configuration"
+    elif [[ -f "$KITTY_CONFIG" ]]; then
+        print_warning "Kitty configuration exists but is not managed by this repository"
+    else
+        print_error "Kitty configuration is missing"
+        ((issues++))
+    fi
+
+    # --------------------------------------------------------------------------
+    # Neovim
+    # --------------------------------------------------------------------------
+
+    if [[ -d "$NVIM_CONFIG" ]]; then
+        if [[ -f "$NVIM_CONFIG/init.lua" ]]; then
+            print_success "Neovim configuration"
+        else
+            print_error "Neovim configuration exists but init.lua is missing"
+            ((issues++))
+        fi
+    else
+        print_error "Neovim configuration is missing"
+        ((issues++))
+    fi
+
+    # --------------------------------------------------------------------------
+    # Dependencies
+    # --------------------------------------------------------------------------
+
+    local dependencies=(
+        git
+        curl
+        zsh
+        nvim
+        tmux
+        eza
+        rg
+        antidote
+        kitty
     )
 
-    for config in "${configs[@]}"; do
-        if [[ -L "$config" ]]; then
-            if [[ -e "$config" ]]; then
-                print_success "Symlink valid: $config"
-            else
-                print_error "Broken symlink: $config"
-                ((issues++))
-            fi
-        elif [[ -f "$config" ]]; then
-            print_info "Regular file (not symlinked): $config"
+    for dependency in "${dependencies[@]}"; do
+        if command_exists "$dependency"; then
+            print_success "$dependency"
         else
-            print_warning "Configuration file missing: $config"
+            print_error "$dependency is missing"
+            ((issues++))
         fi
     done
 
-    # Check vim-plug installation
-    if [[ -f "$HOME/.vim/autoload/plug.vim" ]]; then
-        print_success "vim-plug is installed"
-    else
-        print_error "vim-plug is not installed"
-        ((issues++))
-    fi
+    echo
 
-    # Check Antidote
-    if validate_shell && check_command antidote; then
-        print_success "Antidote is installed"
-    elif validate_shell; then
-        print_error "Antidote is not installed"
-        ((issues++))
-    fi
-
-    # Check eza
-    if check_command eza; then
-        print_success "eza is installed"
-    else
-        print_error "eza is not installed"
-        ((issues++))
-    fi
-
-    if [[ $issues -eq 0 ]]; then
-        print_success "Health check completed successfully"
+    if [[ "$issues" -eq 0 ]]; then
+        print_success "Health check passed"
         return 0
-    else
-        print_error "Health check found $issues issue(s)"
-        return 1
     fi
+
+    print_error "Health check found $issues issue(s)"
+    return 1
 }
 
-# =============================================================================
-# Main Function
-# =============================================================================
+# ==============================================================================
+# Usage
+# ==============================================================================
 
 show_usage() {
-    cat << EOF
+    cat <<EOF
 Usage: $SCRIPT_NAME [OPTIONS]
 
-Development Environment Setup Script
+Dotfiles setup script.
 
-OPTIONS:
-    -h, --help          Show this help message
-    -v, --verbose       Enable verbose logging
-    --skip-backup       Skip backing up existing configurations
-    --check-only        Only run health check, don't install anything
-    --force             Force reinstallation of existing components
+Options:
+    -h, --help          Show this help
+    --skip-backup       Do not backup existing configurations
+    --check-only        Only run health check
+    --force             Continue after installation failures
 
 Examples:
-    $SCRIPT_NAME                    # Run full installation
-    $SCRIPT_NAME --check-only       # Only run health check
-    $SCRIPT_NAME --skip-backup      # Skip configuration backup
-
+    $SCRIPT_NAME
+    $SCRIPT_NAME --check-only
+    $SCRIPT_NAME --skip-backup
+    $SCRIPT_NAME --force
 EOF
 }
+
+# ==============================================================================
+# Main
+# ==============================================================================
 
 main() {
     local skip_backup=false
     local check_only=false
-    local force_install=false
-    local verbose=false
+    local force=false
 
-    # Parse command line arguments
     while [[ $# -gt 0 ]]; do
-        case $1 in
+        case "$1" in
             -h|--help)
                 show_usage
-                exit 0
+                return 0
                 ;;
-            -v|--verbose)
-                verbose=true
-                shift
-                ;;
+
             --skip-backup)
                 skip_backup=true
                 shift
                 ;;
+
             --check-only)
                 check_only=true
                 shift
                 ;;
+
             --force)
-                force_install=true
+                force=true
                 shift
                 ;;
+
             *)
                 print_error "Unknown option: $1"
                 show_usage
-                exit 1
+                return 1
                 ;;
         esac
     done
 
-    # Initialize log file
     : > "$LOG_FILE"
 
-    print_header "Development Environment Setup"
-    log "Starting setup script with PID $$"
+    print_header "Dotfiles Setup"
+    log "Starting $SCRIPT_NAME"
 
-    # Always run dependency check
-    check_dependencies
+    # --------------------------------------------------------------------------
+    # Homebrew
+    # --------------------------------------------------------------------------
 
-    if [[ "$check_only" == true ]]; then
-        run_health_check
-        exit $?
+    if ! check_homebrew; then
+        return 1
     fi
 
-    # Backup existing configurations
+    # --------------------------------------------------------------------------
+    # Dependencies
+    # --------------------------------------------------------------------------
+
+    if ! check_dependencies; then
+        return 1
+    fi
+
+    # --------------------------------------------------------------------------
+    # Check Only
+    # --------------------------------------------------------------------------
+
+    if [[ "$check_only" == true ]]; then
+        health_check
+        return $?
+    fi
+
+    # --------------------------------------------------------------------------
+    # Backup
+    # --------------------------------------------------------------------------
+
     if [[ "$skip_backup" != true ]]; then
         backup_configurations
     fi
 
-    # Run installation steps
-    local steps=(
-        install_vim_plug
-        install_antidote_check
-        configure_vim
-        configure_zsh
-        install_vim_plugins
-        install_pawsh_theme
-    )
+    # --------------------------------------------------------------------------
+    # Installation
+    # --------------------------------------------------------------------------
 
-    local failed_steps=()
-    for step in "${steps[@]}"; do
-        if ! "$step"; then
-            failed_steps+=("$step")
-            if [[ "$force_install" != true ]]; then
-                print_warning "Step $step failed. Use --force to continue despite failures."
-            fi
+    local failed=()
+
+    if ! configure_zsh; then
+        failed+=("configure_zsh")
+    fi
+
+    if ! configure_terminal_tools; then
+        failed+=("configure_terminal_tools")
+    fi
+
+    if ! install_nvim_config; then
+        failed+=("install_nvim_config")
+
+        if [[ "$force" != true ]]; then
+            print_error "Neovim configuration installation failed"
+            return 1
         fi
-    done
+    fi
 
-    # Run final health check
+    # --------------------------------------------------------------------------
+    # Optional Neovim Tools
+    # --------------------------------------------------------------------------
+
+    check_nvim_environment
+
+    # --------------------------------------------------------------------------
+    # Final Verification
+    # --------------------------------------------------------------------------
+
     print_header "Final Verification"
-    run_health_check
 
+    if ! health_check; then
+        failed+=("health_check")
+    fi
+
+    # --------------------------------------------------------------------------
     # Summary
+    # --------------------------------------------------------------------------
+
     print_header "Installation Summary"
-    if [[ ${#failed_steps[@]} -eq 0 ]]; then
-        print_success "All installation steps completed successfully!"
+
+    if [[ ${#failed[@]} -eq 0 ]]; then
+        print_success "Installation completed successfully"
     else
-        print_warning "Some steps failed: ${failed_steps[*]}"
-        print_info "Check the log file for details: $LOG_FILE"
+        print_warning "Failed steps: ${failed[*]}"
+
+        if [[ "$force" != true ]]; then
+            return 1
+        fi
     fi
 
     print_info "Log file: $LOG_FILE"
-    print_info "To apply all changes, restart your terminal or run: exec \$SHELL"
+    print_info "Restart your terminal or run: exec \$SHELL"
 
-    if [[ ${#failed_steps[@]} -eq 0 ]]; then
-        exit 0
-    else
-        exit 1
-    fi
+    return 0
 }
 
-# =============================================================================
-# Script Entry Point
-# =============================================================================
+# ==============================================================================
+# Entry Point
+# ==============================================================================
 
-# Trap to clean up on exit
-cleanup() {
-    local exit_code=$?
-    if [[ $exit_code -ne 0 ]]; then
-        print_error "Script failed with exit code $exit_code"
-        print_info "Check the log file for details: $LOG_FILE"
-    fi
-}
-
-trap cleanup EXIT
-
-# Run main function with all arguments
 main "$@"
