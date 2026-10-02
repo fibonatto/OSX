@@ -1,182 +1,292 @@
-# OSX - Development Configuration
+# OSX
 
-This repository contains the current configuration files used to set up a development environment with Zsh, tmux, Kitty, and Neovim.
+Personal macOS development environment configuration.
+
+The repository contains the configuration files used for Zsh, tmux, Kitty, and the installation of the external Neovim configuration.
 
 > **Note:** The `.deprecated` directory contains legacy files kept only for project history. Its contents are outdated, must not be used, and are intentionally not documented here.
 
 ## Repository Structure
 
-```
+```text
 OSX/
-├── .zshrc                 # Zsh shell configuration
-├── zsh_plugins.txt        # Antidote plugin list
-├── tmux.conf              # tmux configuration
-├── kitty.conf             # Kitty terminal configuration
-└── install.sh             # Automated setup script
+├── .zshrc
+├── gatto.heic
+├── git_create.sh
+├── install.sh
+├── kitty/
+│   ├── dark-theme.auto.conf
+│   ├── dark.conf
+│   ├── kitty.app.icns
+│   ├── kitty.conf
+│   ├── light-theme.auto.conf
+│   ├── light.conf
+│   └── tmux.conf
+├── README.md
+├── zsh/
+│   ├── .zsh/
+│   │   ├── conf.d/
+│   │   │   ├── 10-env.zsh
+│   │   │   ├── 20-path.zsh
+│   │   │   ├── 30-options.zsh
+│   │   │   ├── 40-completion.zsh
+│   │   │   ├── 50-plugins.zsh
+│   │   │   ├── 60-aliases.zsh
+│   │   │   ├── 70-functions.zsh
+│   │   │   ├── 80-fzf.zsh
+│   │   │   └── 90-zoxide.zsh
+│   │   └── themes/
+│   │       └── pawsh.zsh-theme
+│   └── .zshrc
+└── zsh_plugins.txt
 ```
 
-The current configuration is modularized across this repository and other repositories used by the setup. Neovim is maintained separately in [fibonatto/nvim-config](https://github.com/fibonatto/nvim-config) and is cloned by the installer.
+Neovim is maintained separately in [fibonatto/nvim-config](https://github.com/fibonatto/nvim-config) and is cloned by the installer.
 
-## Key Features
+## Configuration
 
-### Zsh Configuration
-- **Antidote**: Lightweight Zsh plugin manager
-- **eza**: A modern, feature-rich replacement for `ls`
-- **Custom prompt**: pawsh-inspired prompt with Git status and contextual state
-- **Included plugins**: zsh-syntax-highlighting, zsh-autosuggestions, and Git-related plugins
-- **Custom aliases**: Shortcuts for Git, Vim, navigation, and system commands
-- **Doom Emacs integration**: Support for using the shell configuration alongside Doom Emacs
+### Zsh
 
-### Terminal Configuration
-- **tmux**: Custom terminal multiplexer configuration
-- **Kitty**: Custom terminal emulator configuration
+The Zsh configuration is split into numbered files under `zsh/.zsh/conf.d/`:
 
-### Neovim Configuration
-Neovim is managed in the separate [fibonatto/nvim-config](https://github.com/fibonatto/nvim-config) repository. The installer clones it into `${XDG_CONFIG_HOME:-$HOME/.config}/nvim`.
+* `10-env.zsh`: environment configuration
+* `20-path.zsh`: PATH configuration
+* `30-options.zsh`: Zsh options
+* `40-completion.zsh`: completion configuration
+* `50-plugins.zsh`: plugin setup
+* `60-aliases.zsh`: aliases
+* `70-functions.zsh`: shell functions
+* `80-fzf.zsh`: fzf configuration
+* `90-zoxide.zsh`: zoxide configuration
+
+The custom `pawsh` theme is located at:
+
+```text
+zsh/.zsh/themes/pawsh.zsh-theme
+```
+
+The repository-level `zsh/.zshrc` loads this configuration.
+
+`zsh_plugins.txt` contains the Antidote plugin list.
+
+### Kitty
+
+Kitty configuration is contained entirely in `kitty/`.
+
+```text
+kitty/
+├── dark-theme.auto.conf
+├── dark.conf
+├── kitty.app.icns
+├── kitty.conf
+├── light-theme.auto.conf
+├── light.conf
+└── tmux.conf
+```
+
+The installer links:
+
+```text
+kitty/kitty.conf
+    -> ~/.config/kitty/kitty.conf
+```
+
+The additional theme files are kept alongside the main Kitty configuration.
+
+### tmux
+
+The tmux configuration is stored under `kitty/tmux.conf` and is linked by the installer to:
+
+```text
+~/.tmux.conf
+```
+
+### Neovim
+
+Neovim is maintained separately:
+
+```text
+https://github.com/fibonatto/nvim-config
+```
+
+The installer clones it into:
+
+```text
+${XDG_CONFIG_HOME:-$HOME/.config}/nvim
+```
+
+The Neovim configuration is not stored in this repository.
 
 ## Installation
 
 ### Prerequisites
 
-The installer supports macOS and Linux. On macOS, [Homebrew](https://brew.sh) must be installed. The installer checks dependencies but does not install them automatically.
+The installer supports macOS and Linux.
 
-The following commands must be available before running the installer:
+On macOS, Homebrew must already be installed. The installer checks dependencies but does not install them automatically.
 
-- `git`
-- `curl`
-- `zsh`
-- `nvim`
-- `tmux`
-- `eza`
-- `rg` (ripgrep)
-- `antidote`
-- `kitty`
+Required commands:
 
-On macOS, install missing packages with Homebrew, for example:
+* `git`
+* `curl`
+* `zsh`
+* `nvim`
+* `tmux`
+* `eza`
+* `rg`
+* `kitty`
+* `antidote`
+
+On macOS, missing dependencies can be installed with:
 
 ```bash
 brew install git curl zsh neovim tmux eza ripgrep antidote kitty
 ```
 
-The installer also checks the following optional Neovim tools. They do not prevent installation:
+The installer also checks these optional Neovim tools:
 
-- `clangd`
-- `node`
-- `npm`
-- `typescript-language-server`
+* `clangd`
+* `node`
+* `npm`
+* `typescript-language-server`
 
-### Automated Installation (Recommended)
+Missing optional tools do not prevent installation.
 
-The installer configures the files in this repository and safely handles existing configuration files. It will:
+### Automated Installation
 
-- Verify Homebrew on macOS and check all required dependencies
-- Back up existing Zsh, tmux, Kitty, and Neovim configurations
-- Link `.zshrc`, `zsh_plugins.txt`, `tmux.conf`, and `kitty.conf` into your home directory
-- Clone the external Neovim configuration into your XDG configuration directory
-- Check optional Neovim development tools
-- Run a final health check and write details to `setup.log`
-
-#### 1. Clone the repository
+Clone the repository:
 
 ```bash
 git clone https://github.com/fibonatto/OSX.git ~/osx-dotfiles
 cd ~/osx-dotfiles
 ```
 
-#### 2. Run the installer
+Run the installer:
 
 ```bash
 chmod +x install.sh
 ./install.sh
 ```
 
-The installer creates timestamped backups next to existing configuration paths. For example, an existing `~/.zshrc` may become `~/.zshrc.20260923120000.backup`.
+The installer:
 
-#### 3. Options
+1. Checks Homebrew on macOS.
+2. Checks required dependencies.
+3. Backs up existing configuration files.
+4. Links the repository's Zsh configuration.
+5. Links the Antidote plugin list.
+6. Links the Kitty configuration.
+7. Links the tmux configuration.
+8. Clones the external Neovim configuration if necessary.
+9. Checks optional Neovim tools.
+10. Runs a final health check.
 
-| Option | Description |
-|--------|-------------|
-| `-h`, `--help` | Show the help message |
-| `--skip-backup` | Do not back up existing configurations before installation |
-| `--check-only` | Run the health check without installing configurations |
-| `--force` | Continue after installation or health-check failures |
+Existing configuration files are backed up with a timestamp suffix:
 
-**Examples:**
+```text
+~/.zshrc.20261002123456.backup
+~/.tmux.conf.20261002123456.backup
+```
+
+### Options
+
+| Option          | Description                             |
+| --------------- | --------------------------------------- |
+| `-h`, `--help`  | Show the help message                   |
+| `--skip-backup` | Skip configuration backups              |
+| `--check-only`  | Run the health check without installing |
+| `--force`       | Continue after installation failures    |
+
+Examples:
 
 ```bash
-# Full installation (recommended)
+# Full installation
 ./install.sh
 
-# Only run the health check
+# Check the current installation
 ./install.sh --check-only
 
-# Skip backups (not recommended)
+# Install without creating backups
 ./install.sh --skip-backup
 
 # Continue after an installation failure
 ./install.sh --force
 ```
 
-#### 4. Apply changes
-
-After installation, restart your terminal or run:
+After installation, restart the shell:
 
 ```bash
 exec $SHELL
 ```
 
-The installer writes its log to `setup.log` in the repository directory.
+The installer writes its log to:
 
-### Shell Configuration
-
-If Zsh is not your current login shell, the installer displays the command needed to change it:
-
-```bash
-chsh -s "$(command -v zsh)"
+```text
+setup.log
 ```
 
-Restart your terminal after changing the login shell.
+## Managed Files
+
+The installer manages these files:
+
+| Repository         | Destination                  |
+| ------------------ | ---------------------------- |
+| `zsh/.zshrc`       | `~/.zshrc`                   |
+| `zsh_plugins.txt`  | `~/.zsh_plugins.txt`         |
+| `kitty/kitty.conf` | `~/.config/kitty/kitty.conf` |
+| `kitty/tmux.conf`  | `~/.tmux.conf`               |
+
+Neovim is cloned separately into:
+
+```text
+${XDG_CONFIG_HOME:-$HOME/.config}/nvim
+```
 
 ## Health Check
 
-Run the health check with:
+Run:
 
 ```bash
 ./install.sh --check-only
 ```
 
-A successful health check confirms that the managed configuration links exist, the external Neovim configuration contains `init.lua`, and all required dependencies are available.
+The health check verifies:
+
+* Zsh configuration link
+* Antidote plugin list link
+* tmux configuration link
+* Kitty configuration link
+* Neovim configuration
+* Required dependencies
+
+A successful check reports:
+
+```text
+Health check passed
+```
 
 ## Customization
 
-Edit the current configuration files directly to customize the environment:
+Edit the files in this repository directly.
 
-- `.zshrc` for shell behavior, aliases, and prompt settings
-- `zsh_plugins.txt` for Antidote plugins
-- `tmux.conf` for tmux behavior and key bindings
-- `kitty.conf` for terminal appearance and behavior
-- The external [nvim-config](https://github.com/fibonatto/nvim-config) repository for Neovim settings and plugins
+For Zsh:
 
-Do not use files from `.deprecated`; they are retained for historical reference only.
+```text
+zsh/.zshrc
+zsh/.zsh/conf.d/
+zsh/.zsh/themes/pawsh.zsh-theme
+zsh_plugins.txt
+```
 
-## Contributing
+For Kitty and tmux:
 
-Feel free to:
+```text
+kitty/
+```
 
-- Report bugs
-- Suggest improvements
-- Submit pull requests
-- Share configuration improvements
+Neovim is customized in the separate [nvim-config](https://github.com/fibonatto/nvim-config) repository.
 
 ## License
 
-This project is under the MIT license. See the LICENSE file for more details.
+MIT License.
 
-## Contact
-
-- **Author**: Bonatto
-- **GitHub**: [SergioBonatto](https://github.com/SergioBonatto/)
-
----
-
-These configurations represent a personal development environment. Adapt them as needed for your workflow.
