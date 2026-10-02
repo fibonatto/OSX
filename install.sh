@@ -43,10 +43,15 @@ readonly ZSHRC="$HOME/.zshrc"
 readonly ZSH_PLUGINS="$HOME/.zsh_plugins.txt"
 
 readonly TMUX_CONFIG="$HOME/.tmux.conf"
-
 readonly KITTY_CONFIG="$HOME/.config/kitty/kitty.conf"
 
 readonly NVIM_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
+
+readonly REPO_ZSHRC="${SCRIPT_DIR}/zsh/.zshrc"
+readonly REPO_ZSH_PLUGINS="${SCRIPT_DIR}/zsh_plugins.txt"
+
+readonly REPO_TMUX_CONFIG="${SCRIPT_DIR}/kitty/tmux.conf"
+readonly REPO_KITTY_CONFIG="${SCRIPT_DIR}/kitty/kitty.conf"
 
 readonly BACKUP_SUFFIX=".$(date +%Y%m%d%H%M%S).backup"
 
@@ -155,7 +160,6 @@ check_homebrew() {
 # Antidote
 # ==============================================================================
 
-
 check_antidote() {
     local antidote_script
 
@@ -204,7 +208,7 @@ check_dependencies() {
         fi
     done
 
-		if ! check_antidote; then
+    if ! check_antidote; then
         missing+=("antidote")
     fi
 
@@ -230,14 +234,14 @@ check_dependencies() {
 configure_zsh() {
     print_header "Configuring Zsh"
 
-    if [[ -f "$SCRIPT_DIR/.zshrc" ]]; then
-        create_symlink "$SCRIPT_DIR/.zshrc" "$ZSHRC"
+    if [[ -f "$REPO_ZSHRC" ]]; then
+        create_symlink "$REPO_ZSHRC" "$ZSHRC"
     else
-        print_warning "No .zshrc found in $SCRIPT_DIR"
+        print_warning "No zsh/.zshrc found in $SCRIPT_DIR"
     fi
 
-    if [[ -f "$SCRIPT_DIR/zsh_plugins.txt" ]]; then
-        create_symlink "$SCRIPT_DIR/zsh_plugins.txt" "$ZSH_PLUGINS"
+    if [[ -f "$REPO_ZSH_PLUGINS" ]]; then
+        create_symlink "$REPO_ZSH_PLUGINS" "$ZSH_PLUGINS"
     else
         print_warning "No zsh_plugins.txt found in $SCRIPT_DIR"
     fi
@@ -258,17 +262,17 @@ configure_terminal_tools() {
     print_header "Configuring Terminal Tools"
 
     # tmux
-    if [[ -f "$SCRIPT_DIR/tmux.conf" ]]; then
-        create_symlink "$SCRIPT_DIR/tmux.conf" "$TMUX_CONFIG"
+    if [[ -f "$REPO_TMUX_CONFIG" ]]; then
+        create_symlink "$REPO_TMUX_CONFIG" "$TMUX_CONFIG"
     else
-        print_warning "No tmux.conf found"
+        print_warning "No kitty/tmux.conf found"
     fi
 
     # Kitty
-    if [[ -f "$SCRIPT_DIR/kitty.conf" ]]; then
-        create_symlink "$SCRIPT_DIR/kitty.conf" "$KITTY_CONFIG"
+    if [[ -f "$REPO_KITTY_CONFIG" ]]; then
+        create_symlink "$REPO_KITTY_CONFIG" "$KITTY_CONFIG"
     else
-        print_warning "No kitty.conf found"
+        print_warning "No kitty/kitty.conf found"
     fi
 }
 
@@ -487,7 +491,7 @@ Dotfiles setup script.
 Options:
     -h, --help          Show this help
     --skip-backup       Do not backup existing configurations
-    --check-only        Only run health check
+    --check-only       Only run health check
     --force             Continue after installation failures
 
 Examples:
@@ -641,3 +645,4 @@ main() {
 # ==============================================================================
 
 main "$@"
+
