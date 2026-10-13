@@ -1,0 +1,62 @@
+#!/usr/bin/env sh
+
+#
+# for this to work you must configure sudo such that
+# it will be able to run the command without password
+#
+# see this wiki page for information:
+#  - https://github.com/asmvik/yabai/wiki/Installing-yabai-(latest-release)#configure-scripting-addition
+#
+# yabai -m signal --add event=dock_did_restart action="sudo yabai --load-sa"
+# sudo yabai --load-sa
+#
+
+# global settings
+yabai -m config                                 \
+    external_bar                 off       \
+    menubar_opacity              1.0            \
+    display_arrangement_order    default        \
+    window_origin_display        default        \
+    window_placement             second_child   \
+    window_insertion_point       focused        \
+    window_zoom_persist          on             \
+    window_shadow                on             \
+    skip_window_focus_animation  off            \
+    window_animation_duration    0.0            \
+    window_animation_easing      ease_out_circ  \
+    window_opacity_duration      0.0            \
+    active_window_opacity        1.0            \
+    normal_window_opacity        0.90           \
+    window_opacity               on            \
+    insert_feedback_color        0xffd75f5f     \
+    split_ratio                  0.50           \
+    split_type                   auto           \
+    auto_balance                 off            \
+    layout                       bsp            
+
+
+# mouse
+yabai -m config                                 \
+    mouse_follows_focus          off            \
+    mouse_modifier               fn             \
+    mouse_action1                move           \
+    mouse_action2                resize         \
+    focus_follows_mouse          on             \
+    mouse_drop_action            swap
+
+echo "yabai configuration loaded.."
+
+yabai -m config \
+    top_padding     4  \
+    bottom_padding  4  \
+    left_padding    4  \
+    right_padding   4  \
+    window_gap      6
+
+/opt/homebrew/bin/borders \
+    style=s \
+    width=3.0 \
+    active_color=0xff9a6f96 \
+    inactive_color=0x00000000 &
+
+yabai -m rule --add title="^key-popup$" manage=off sticky=on grid=6:6:1:1:4:4

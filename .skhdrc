@@ -1,0 +1,26 @@
+# Window navigation
+
+# Hyper = cmd + alt + ctrl + shift
+
+hyper - h : yabai -m window --focus west
+hyper - j : yabai -m window --focus south
+hyper - k : yabai -m window --focus north
+hyper - l : yabai -m window --focus east
+
+# Applications
+
+hyper - return : /Applications/kitty.app/Contents/MacOS/kitty --single-instance -d ~
+hyper - d : open -a /Applications/Discord.app
+hyper - b : open -a /Applications/Safari.app
+hyper - s : open -a /Applications/Stremio.app
+hyper - p : open -a /Applications/PhotoCraft.app
+
+# Existing shortcuts
+
+cmd + shift - return : ~/Scripts/qtb.sh
+hyper - m : open -a /Applications/mpv.app --args "$(pbpaste)"
+
+hyper - space : yabai -m window --toggle float --grid 4:4:1:1:2:2
+
+# Popup de atalhos (Hyper + A)
+hyper - a : /Applications/kitty.app/Contents/MacOS/kitty --title key-popup -o confirm_os_window_close=0 /bin/sh /Users/bonatto/.local/bin/key-popup
