@@ -1,0 +1,8 @@
+#!/bin/sh
+dir="$HOME/.config/kitty"
+if [ "$(readlink "$dir/current-theme.conf")" = "$dir/light.conf" ]; then
+  ln -sf "$dir/dark.conf" "$dir/current-theme.conf"
+else
+  ln -sf "$dir/light.conf" "$dir/current-theme.conf"
+fi
+kill -USR1 "$KITTY_PID"

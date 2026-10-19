@@ -1,0 +1,69 @@
+# ==============================================================================
+# Kitty Theme
+# ==============================================================================
+# font_family JetBrainsMono Nerd Font Mono
+# font_family Pixel Code light
+# font_family Departure Mono
+
+font_family Departure Mono Lig
+font_features DepartureMono-Lig +calt
+disable_ligatures never
+
+font_size 15.5
+
+cursor_shape block
+cursor_blink_interval 0
+cursor_trail 200
+cursor_trail_decay 0.1 0.4
+cursor_trail_start_threshold 2
+
+window_padding_width 12
+
+# ==============================================================================
+# Window
+# ==============================================================================
+
+hide_window_decorations titlebar-only
+enabled_layouts splits
+
+# ==============================================================================
+# macOS
+# ==============================================================================
+
+macos_option_as_alt yes
+notify_on_cmd_finish invisible 20
+macos_quit_when_last_window_closed yes
+# startup_session ~/.config/kitty/work.session
+
+# ==============================================================================
+# Clipboard
+# ==============================================================================
+
+copy_on_select yes
+
+# ==============================================================================
+# Keybindings
+# ==============================================================================
+
+map cmd+n new_os_window
+
+# Tabs
+map cmd+1 goto_tab 1
+map cmd+2 goto_tab 2
+map cmd+3 goto_tab 3
+map cmd+4 goto_tab 4
+map cmd+5 goto_tab 5
+
+map cmd+shift+] next_tab
+map cmd+shift+[ previous_tab
+
+# Splits
+map cmd+h neighboring_window left
+map cmd+l neighboring_window right
+
+map cmd+s launch --location=hsplit
+map cmd+t launch --location=vsplit --cwd=current
+
+map ctrl+alt+shift+cmd+b launch --type=os-window nvim ~/Basal/index.md
+
+map alt+t combine : launch --type=background --allow-remote-control /Users/bonatto/.config/kitty/toggle-theme.sh : send_text all \x1bt
